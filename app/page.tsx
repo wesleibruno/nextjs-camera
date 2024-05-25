@@ -1,6 +1,6 @@
 "use client";
 // Importe useState, useRef e useEffect
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Webcam from 'react-webcam';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -13,7 +13,7 @@ declare global {
 }
 
 export default function Home() {
-  const webcamRef = useRef<any>(null); // Usamos 'any' para ignorar o tipo de erro temporariamente
+  const webcamRef = useRef(null);
   const recognition = useRef<any>(null);
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [isAudioOn, setIsAudioOn] = useState(true);
@@ -34,7 +34,7 @@ export default function Home() {
 
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    setIsSpeechRecognitionSupported(!!SpeechRecognition); 
+    setIsSpeechRecognitionSupported(!!SpeechRecognition); // Verifica se a API de Reconhecimento de Fala é suportada
 
     if (isAudioOn && isTranscriptionActive && recognition.current === null && SpeechRecognition) {
       recognition.current = new SpeechRecognition();
@@ -134,13 +134,6 @@ export default function Home() {
           />
         )}
         {!isAudioOn && !isMobile && ( // Mostra o botão de solicitação de permissão apenas se o áudio estiver desativado e não for um dispositivo móvel
-          <div className="flex justify-center p-4">
-            <Button onClick={requestMicrophonePermission}>Allow Microphone Access</Button>
-          </div>
-        )}
-     
-     {!isAudioOn && !isMobile && (
-          // Mostra o botão de solicitação de permissão apenas se o áudio estiver desativado e não for um dispositivo móvel
           <div className="flex justify-center p-4">
             <Button onClick={requestMicrophonePermission}>Allow Microphone Access</Button>
           </div>
