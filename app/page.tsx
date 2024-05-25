@@ -17,10 +17,11 @@ export default function Home() {
   const recognition = useRef<any>(null);
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [isAudioOn, setIsAudioOn] = useState(true);
-  const [isTranscriptionActive, setIsTranscriptionActive] = useState(false); // Novo estado para controlar a transcrição de áudio
+  const [isTranscriptionActive, setIsTranscriptionActive] = useState(false);
   const [facingMode, setFacingMode] = useState('user');
   const [isMobile, setIsMobile] = useState(false);
   const [transcribedText, setTranscribedText] = useState('');
+  const [isSpeechRecognitionSupported, setIsSpeechRecognitionSupported] = useState(false);
 
   useEffect(() => {
     setIsMobile(window.innerWidth <= 768);
@@ -32,31 +33,29 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (isAudioOn && isTranscriptionActive && recognition.current === null) { // Adiciona verificação para transcrição de áudio ativa
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        recognition.current = new SpeechRecognition();
-        recognition.current.continuous = true;
-        recognition.current.lang = 'pt-BR';
-        recognition.current.onresult = (event: any) => {
-          const transcript = event.results[event.results.length - 1][0].transcript;
-          setTranscribedText(prevText => prevText + transcript);
-        };
-        recognition.current.onerror = (event: any) => {
-          console.error('Speech recognition error:', event.error);
-        };
-        recognition.current.onend = () => {
-          console.log('Speech recognition ended.');
-        };
-        recognition.current.start();
-      } else {
-        console.error('Speech recognition not supported.');
-      }
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    setIsSpeechRecognitionSupported(!!SpeechRecognition); // Verifica se a API de Reconhecimento de Fala é suportada
+
+    if (isAudioOn && isTranscriptionActive && recognition.current === null && SpeechRecognition) {
+      recognition.current = new SpeechRecognition();
+      recognition.current.continuous = true;
+      recognition.current.lang = 'pt-BR';
+      recognition.current.onresult = (event: any) => {
+        const transcript = event.results[event.results.length - 1][0].transcript;
+        setTranscribedText(prevText => prevText + transcript);
+      };
+      recognition.current.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+      };
+      recognition.current.onend = () => {
+        console.log('Speech recognition ended.');
+      };
+      recognition.current.start();
     } else if ((!isAudioOn || !isTranscriptionActive) && recognition.current !== null) {
       recognition.current.stop();
       recognition.current = null;
     }
-  }, [isAudioOn, isTranscriptionActive]); // Adiciona isTranscriptionActive à lista de dependências
+  }, [isAudioOn, isTranscriptionActive]);
 
   const toggleCamera = () => {
     setIsCameraOn(prevState => !prevState);
@@ -66,7 +65,7 @@ export default function Home() {
     setIsAudioOn(prevState => !prevState);
   };
 
-  const toggleTranscription = () => { // Função para alternar a transcrição de áudio
+  const toggleTranscription = () => {
     setIsTranscriptionActive(prevState => !prevState);
   };
 
@@ -79,6 +78,17 @@ export default function Home() {
     setFacingMode(prevFacingMode =>
       prevFacingMode === 'user' ? 'environment' : 'user'
     );
+  };
+
+  const requestMicrophonePermission = () => {
+    navigator.mediaDevices
+      .getUserMedia({ audio: true }) // Solicita permissão para acessar o microfone
+      .then(() => {
+        setIsAudioOn(true);
+      })
+      .catch(error => {
+        console.error('Error accessing microphone:', error);
+      });
   };
 
   return (
@@ -107,14 +117,14 @@ export default function Home() {
             <Button onClick={toggleCamera}>Start Camera</Button>
           </div>
         )}
-        {isAudioOn && ( // Renderiza o botão para ativar/desativar a transcrição de áudio apenas se o áudio estiver ativado
+        {isAudioOn && isSpeechRecognitionSupported && (
           <div className="flex justify-center p-4">
             <Button onClick={toggleTranscription}>
               {isTranscriptionActive ? 'Disable Transcription' : 'Enable Transcription'}
             </Button>
           </div>
         )}
-        {isTranscriptionActive && ( // Renderiza o textarea apenas se a transcrição de áudio estiver ativada
+        {isTranscriptionActive && (
           <textarea
             value={transcribedText}
             onChange={event => setTranscribedText(event.target.value)}
@@ -122,6 +132,11 @@ export default function Home() {
             placeholder="Transcribed text will appear here..."
             readOnly
           />
+        )}
+        {!isAudioOn && !isMobile && ( // Mostra o botão de solicitação de permissão apenas se o áudio estiver desativado e não for um dispositivo móvel
+          <div className="flex justify-center p-4">
+            <Button onClick={requestMicrophonePermission}>Allow Microphone Access</Button>
+          </div>
         )}
       </Card>
     </div>
