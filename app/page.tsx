@@ -1,14 +1,24 @@
 "use client";
+import { useState, useRef, useEffect } from 'react';
+import Webcam from 'react-webcam';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { useState, useRef } from 'react';
-import Webcam from 'react-webcam';
 
 export default function Home() {
   const webcamRef = useRef(null);
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [isAudioOn, setIsAudioOn] = useState(true);
   const [facingMode, setFacingMode] = useState('user');
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    setIsMobile(window.innerWidth <= 768);
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const toggleCamera = () => {
     setIsCameraOn((prevState) => !prevState);
@@ -28,8 +38,6 @@ export default function Home() {
       prevFacingMode === 'user' ? 'environment' : 'user'
     );
   };
-
-  const isMobile = window.innerWidth <= 768;
 
   return (
     <div className="flex justify-center items-center h-screen">
